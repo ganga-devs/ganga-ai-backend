@@ -1,0 +1,6 @@
+Django>=5.0,<5.1
+llama-index
+llama-index-llms-ollama
+llama-index-embeddings-huggingface
+sphinx
+aiofile
