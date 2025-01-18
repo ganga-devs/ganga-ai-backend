@@ -1,6 +1,9 @@
 Django>=5.0,<5.1
-llama-index
-llama-index-llms-ollama
-llama-index-embeddings-huggingface
-sphinx
+GitPython
 aiofile
+llama-index
+llama-index-embeddings-huggingface
+llama-index-llms-ollama
+python-dotenv
+rich
+sphinx
