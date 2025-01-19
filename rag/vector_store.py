@@ -79,8 +79,8 @@ class Vector_Store():
         return False
 
     def generate_text_files_from_sphinx_files(self):
-        conversion_command = ["sphinx-build", "-b", "text", self.raw_data_path, self.processed_data_path]
-        subprocess.run(conversion_command, check=True)
+        build_command = ["sphinx-build", "-b", "text", self.raw_data_path, self.processed_data_path]
+        subprocess.run(build_command, check=True)
         doctrees_path = os.path.join(self.processed_data_path, ".doctrees")
         if os.path.exists(doctrees_path):
             subprocess.run(["rm", "-rf", doctrees_path], check=True)

@@ -16,7 +16,6 @@ from os.path import join, dirname
 from typing import TypedDict, List, Literal
 import logging
 import os
-import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,6 +78,7 @@ environment_variables = load_env()
 # Application definition
 
 INSTALLED_APPS = [
+    "rag.apps.RagConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
