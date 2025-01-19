@@ -78,24 +78,33 @@ class Vector_Store():
                     return True
         return False
 
-    def generate_text_files_from_sphinx_files(self):
-        build_command = ["sphinx-build", "-b", "text", self.raw_data_path, self.processed_data_path]
-        subprocess.run(build_command, check=True)
-        doctrees_path = os.path.join(self.processed_data_path, ".doctrees")
-        if os.path.exists(doctrees_path):
-            subprocess.run(["rm", "-rf", doctrees_path], check=True)
+    def generate_text_files_from_sphinx_files(self, input_sphinx_dir: str, output_txt_dir):
+        """
+        Generates text files from sphinx files
+        """
 
-    def consume_ganga_docs(self, dir: str) -> None:
-        self.generate_text_files_from_sphinx_files()
-        documents = SimpleDirectoryReader(input_dir=self.processed_data_path, recursive=True).load_data()
+        build_command = ["sphinx-build", "-b", "text", input_sphinx_dir, output_txt_dir]
+
+        subprocess.run(build_command, check=True)
+
+        doctrees_path = os.path.join(output_txt_dir, ".doctrees")
+        if os.path.exists(doctrees_path):
+            shutil.rmtree(doctrees_path)
+
+    def consume_ganga_docs(self) -> None:
+        ganga_sphinx_files_path = os.path.join(self.raw_data_path, "ganga/doc")
+        ganga_txt_files_path = os.path.join(self.processed_data_path, "ganga/doc")
+        create_directory(ganga_txt_files_path)
+        self.generate_text_files_from_sphinx_files(input_sphinx_dir=ganga_sphinx_files_path, output_txt_dir=ganga_txt_files_path)
+        documents = SimpleDirectoryReader(input_dir=ganga_sphinx_files_path, recursive=True).load_data()
         self.vector_store = VectorStoreIndex.from_documents(documents)
         self.vector_store.storage_context.persist(persist_dir=self.vector_store_path)
 
     def consume_data(self, dir_list: List[str]):
         for dir in dir_list:
             match dir:
-                case "ganga/doc":
-                    self.consume_ganga_docs(dir=dir)
+                case "cache/raw/ganga/doc":
+                    self.consume_ganga_docs()
                 case _:
                     logger.info(f"file: vector_store method: consume_data unhandled type of data: {dir}")
 

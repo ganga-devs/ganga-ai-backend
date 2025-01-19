@@ -48,7 +48,7 @@ def load_env() -> Environtment_Variables:
     """
 
     dotenv_path = join(dirname(__file__), '../.env')
-    logger.info("file: vector_store function: load_env loading the environment")
+    logger.info("file: root/settings.py function: load_env loading the environment")
 
     try:
         load_dotenv(dotenv_path)
@@ -56,8 +56,8 @@ def load_env() -> Environtment_Variables:
         logger.warning(f"file: vector_store function: load_env could not load environment variables with error: {err}")
 
     default_embedding_model = "BAAI/bge-small-en-v1.5"
-    default_llm_model = ""
-    default_data_urls = ""
+    default_llm_model = "mistral"
+    default_data_urls = "https://github.com/ganga-devs/ganga"
     default_cache_path = "cache"
     EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', default_embedding_model)
     LLM_MODEL = os.getenv('LLM_MODEL', default_llm_model)
