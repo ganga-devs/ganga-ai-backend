@@ -91,24 +91,21 @@ class Vector_Store():
         if os.path.exists(doctrees_path):
             shutil.rmtree(doctrees_path)
 
-    def consume_ganga_docs(self) -> None:
+    def process_ganga_docs(self) -> None:
         ganga_sphinx_files_path = os.path.join(self.raw_data_path, "ganga/doc")
         ganga_txt_files_path = os.path.join(self.processed_data_path, "ganga/doc")
         create_directory(ganga_txt_files_path)
         self.generate_text_files_from_sphinx_files(input_sphinx_dir=ganga_sphinx_files_path, output_txt_dir=ganga_txt_files_path)
-        documents = SimpleDirectoryReader(input_dir=ganga_sphinx_files_path, recursive=True).load_data()
-        self.vector_store = VectorStoreIndex.from_documents(documents)
-        self.vector_store.storage_context.persist(persist_dir=self.vector_store_path)
 
-    def consume_data(self, dir_list: List[str]):
+    def process_data(self, dir_list: List[str]):
         for dir in dir_list:
             match dir:
                 case "cache/raw/ganga/doc":
-                    self.consume_ganga_docs()
+                    self.process_ganga_docs()
                 case _:
                     logger.info(f"file: vector_store method: consume_data unhandled type of data: {dir}")
 
-    def create_list_of_directories_to_consume(self, raw_cache_path: str) -> List[str]:
+    def create_list_of_directories_to_process(self, raw_cache_path: str) -> List[str]:
         """
         Create a list of directories to consume data from which the rag will be built
         """
@@ -134,14 +131,21 @@ class Vector_Store():
                 logger.warning(f"file: vector_store method: download_data the unknown type of url encountered: {url}")
 
     def create_vector_store(self):
+        logger.info(f"method: create_vector_store downloading data")
         for directory_path in (self.raw_data_path, self.processed_data_path, self.vector_store_path):
             create_directory(directory_path)
 
         for url in self.data_urls:
             self.download_intial_data(url=url, download_path=self.raw_data_path)
 
-        dir_list = self.create_list_of_directories_to_consume(self.raw_data_path)
-        self.consume_data(dir_list=dir_list)
+        logger.info(f"method: create_vector_store processing downloaded data")
+        dir_list = self.create_list_of_directories_to_process(self.raw_data_path)
+        self.process_data(dir_list=dir_list)
+
+        logger.info(f"method: create_vector_store generating vector indices")
+        documents = SimpleDirectoryReader(input_dir=self.processed_data_path, recursive=True).load_data()
+        self.vector_store = VectorStoreIndex.from_documents(documents)
+        self.vector_store.storage_context.persist(persist_dir=self.vector_store_path)
 
         for directory_path in (self.raw_data_path, self.processed_data_path):
             remove_directory(directory_path=directory_path)
