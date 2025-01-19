@@ -54,7 +54,7 @@ def load_env() -> Environtment_Variables:
     try:
         load_dotenv(dotenv_path)
     except Exception as err:
-        logger.warn(f"file: vector_store function: load_env could not load environment variables with error: {err}")
+        logger.warning(f"file: vector_store function: load_env could not load environment variables with error: {err}")
 
     default_embedding_model = "BAAI/bge-small-en-v1.5"
     default_llm_model = ""

@@ -4,6 +4,7 @@ from __future__ import annotations
 from git import Repo, RemoteProgress
 from rich import console, progress
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -76,11 +77,14 @@ class GitRemoteProgress(RemoteProgress):
                 message=f"[bright_black]{message}",
             )
 
-def download_github_repo(github_url: str, local_path: str) -> None:
-    logger.info(f"file: github function: download_github_repo cloning repository: {github_url} in directory: {local_path}")
-    print(f"Cloning git repository from {github_url}...")
+def download_github_repo(github_url: str, download_path: str) -> None:
+    logger.info(f"file: github function: download_github_repo cloning repository: {github_url} in directory: {download_path}")
     try:
-        Repo.clone_from(github_url, local_path, progress=GitRemoteProgress())
+        repo_name = github_url.rstrip('/').split('/')[-1].replace('.git', '')
+        repo_download_path = os.path.join(download_path, repo_name)
+        os.makedirs(repo_download_path)
+        print(f"Cloning git repository from {github_url}...")
+        Repo.clone_from(github_url, repo_download_path, progress=GitRemoteProgress())
         print("Repository cloned successfully")
     except Exception as err:
         print("Could not clone repository")
@@ -88,5 +92,5 @@ def download_github_repo(github_url: str, local_path: str) -> None:
 
 #TODO: Write a test for this function
 # github_test_url = "https://github.com/ganga-devs/ganga"
-# storage_path = "./cache/data/repo"
+# storage_path = "./cache/raw"
 # download_github_repo(github_test_url, storage_path)

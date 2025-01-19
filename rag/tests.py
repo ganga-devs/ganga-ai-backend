@@ -47,7 +47,7 @@ class Rag_Test_Case(TestCase):
             self.assertFalse(vector_store_exists(test_cache_path))
 
         except Exception as err:
-            logger.warn(f"Error encountered in running test_vector_store_exists: {err}")
+            logger.warning(f"Error encountered in running test_vector_store_exists: {err}")
             return
 
         try:
@@ -60,5 +60,5 @@ class Rag_Test_Case(TestCase):
             remove_dummy_vector_store()
 
         except Exception as err:
-            logger.warn(f"Error encountered in running test_vector_store_exists: {err}")
+            logger.warning(f"Error encountered in running test_vector_store_exists: {err}")
             return
