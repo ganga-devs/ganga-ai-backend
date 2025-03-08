@@ -9,6 +9,7 @@ from rag.github import download_github_repo
 from llama_index.core import ( VectorStoreIndex, SimpleDirectoryReader, load_index_from_storage, Settings)
 from llama_index.core.storage import StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.llms.ollama import Ollama
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,25 +50,28 @@ class Vector_Store():
     """
     TODOS
     1. Use pg vector instead of json
+    2. Convert this to a singleton based class
     """
 
     cache_path = environment_variables["CACHE_PATH"]
     embedding_model = environment_variables["EMBEDDING_MODEL"]
     llm_model = environment_variables["LLM_MODEL"]
     data_urls = environment_variables["DATA_URLS"]
+    request_timeout = 300
     raw_data_path = os.path.join(cache_path, "raw")
     processed_data_path = os.path.join(cache_path, "processed")
     vector_store_path = os.path.join(cache_path, "vector_store")
     Settings.embed_model = HuggingFaceEmbedding(model_name=embedding_model)
     vector_store = None
+    llm = Ollama(model=llm_model, request_timeout=request_timeout)
 
     def __init__(self):
-        if self.vector_store_exists():
+        if self.does_vector_store_exist():
             self.load_vector_store()
         else:
             self.create_vector_store()
 
-    def vector_store_exists(self) -> bool:
+    def does_vector_store_exist(self) -> bool:
         """
         Check if the vector store already exists and has only indices in json files
         """
@@ -153,3 +157,13 @@ class Vector_Store():
     def load_vector_store(self):
         storage_context = StorageContext.from_defaults(persist_dir=self.vector_store_path)
         self.vector_store = load_index_from_storage(storage_context)
+
+    def query_vector_store(self, query: str):
+        if self.vector_store:
+            query_engine = self.vector_store.as_query_engine()
+            llm_response = query_engine.query(query)
+            return llm_response
+        else:
+            return ""
+
+vector_store = Vector_Store()

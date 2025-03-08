@@ -8,3 +8,4 @@ llama-index-llms-ollama
 python-dotenv
 rich
 sphinx
+pgvector
