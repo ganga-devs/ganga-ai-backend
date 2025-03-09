@@ -160,7 +160,7 @@ class Vector_Store():
 
     def query_vector_store(self, query: str):
         if self.vector_store:
-            query_engine = self.vector_store.as_query_engine()
+            query_engine = self.vector_store.as_query_engine(llm=self.llm)
             llm_response = query_engine.query(query)
             return llm_response
         else:
