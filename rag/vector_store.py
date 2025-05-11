@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import psycopg2
 from typing import Literal, List
 from root.settings import environment_variables
 from rag.github import download_github_repo
@@ -10,6 +11,7 @@ from llama_index.core import ( VectorStoreIndex, SimpleDirectoryReader, load_ind
 from llama_index.core.storage import StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
+from llama_index.vector_stores.postgres import PGVectorStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,37 +51,46 @@ def remove_directory(directory_path: str) -> None:
 class Vector_Store():
     """
     TODOS
-    1. Use pg vector instead of json
+    1. The creation process of the db should be orchestrated by the docker script
     2. Convert this to a singleton based class
+    3. Move to bigger dimension embeddings
     """
 
     cache_path = environment_variables["CACHE_PATH"]
     embedding_model = environment_variables["EMBEDDING_MODEL"]
     llm_model = environment_variables["LLM_MODEL"]
     data_urls = environment_variables["DATA_URLS"]
+    dbname = environment_variables["DBNAME"]
+    username = environment_variables["USERNAME"]
+    password = environment_variables["PASSWORD"]
+    host = environment_variables["HOST"]
+    port = environment_variables["PORT"]
     request_timeout = 300
     raw_data_path = os.path.join(cache_path, "raw")
     processed_data_path = os.path.join(cache_path, "processed")
-    vector_store_path = os.path.join(cache_path, "vector_store")
     Settings.embed_model = HuggingFaceEmbedding(model_name=embedding_model)
+    Settings.llm = Ollama(model=llm_model, request_timeout=request_timeout)
     vector_store = None
-    llm = Ollama(model=llm_model, request_timeout=request_timeout)
+    storage_context = None
+    query_engine = None
+    connection = psycopg2.connect(dbname=dbname, user=username, password=password, host=host)
+    connection.autocommit = True
 
     def __init__(self):
         if self.does_vector_store_exist():
             self.load_vector_store()
         else:
-            self.create_vector_store()
+            self.create_and_load_vector_store()
 
     def does_vector_store_exist(self) -> bool:
         """
-        Check if the vector store already exists and has only indices in json files
+        Check if the vector store already exists
         """
-        logger.info(f"file: vector_store method: vector_store_exists vector_store_path: {self.vector_store_path}")
-        if os.path.isdir(self.vector_store_path):
-            for file_name in os.listdir(self.vector_store_path):
-                if file_name.endswith(".json"):
-                    return True
+        # logger.info(f"file: vector_store method: vector_store_exists vector_store_path: {self.vector_store_path}")
+        # if os.path.isdir(self.vector_store_path):
+        #     for file_name in os.listdir(self.vector_store_path):
+        #         if file_name.endswith(".json"):
+        #             return True
         return False
 
     def generate_text_files_from_sphinx_files(self, input_sphinx_dir: str, output_txt_dir):
@@ -134,9 +145,9 @@ class Vector_Store():
             case "UNKNOWN":
                 logger.warning(f"file: vector_store method: download_data the unknown type of url encountered: {url}")
 
-    def create_vector_store(self):
+    def create_and_load_vector_store(self):
         logger.info(f"method: create_vector_store downloading data")
-        for directory_path in (self.raw_data_path, self.processed_data_path, self.vector_store_path):
+        for directory_path in (self.raw_data_path, self.processed_data_path):
             create_directory(directory_path)
 
         for url in self.data_urls:
@@ -146,22 +157,57 @@ class Vector_Store():
         dir_list = self.create_list_of_directories_to_process(self.raw_data_path)
         self.process_data(dir_list=dir_list)
 
-        logger.info(f"method: create_vector_store generating vector indices")
-        documents = SimpleDirectoryReader(input_dir=self.processed_data_path, recursive=True).load_data()
-        self.vector_store = VectorStoreIndex.from_documents(documents)
-        self.vector_store.storage_context.persist(persist_dir=self.vector_store_path)
+        logger.info(f"method: create_vector_store preparing vector database")
+        self.vector_store =  PGVectorStore.from_params(
+            database=self.dbname,
+            host=self.host,
+            password=self.password,
+            port=self.port,
+            user=self.username,
+            table_name="ganga_rag",
+            embed_dim=384,
+            hnsw_kwargs={
+                "hnsw_m": 16,
+                "hnsw_ef_construction": 64,
+                "hnsw_ef_search": 40,
+                "hnsw_dist_method": "vector_cosine_ops",
+            },
+        )
 
+        logger.info(f"method: create_vector_store loading processed documents")
+        self.storage_context = StorageContext.from_defaults(vector_store=self.vector_store)
+        documents = SimpleDirectoryReader(input_dir=self.processed_data_path, recursive=True).load_data()
+
+        logger.info(f"method: create_vector_store creating query_engine")
+        index = VectorStoreIndex.from_documents(documents, storage_context=self.storage_context)
+        self.query_engine = index.as_query_engine()
+
+        logger.info(f"method: create_vector_store clearing intermediary files")
         for directory_path in (self.raw_data_path, self.processed_data_path):
             remove_directory(directory_path=directory_path)
 
     def load_vector_store(self):
-        storage_context = StorageContext.from_defaults(persist_dir=self.vector_store_path)
-        self.vector_store = load_index_from_storage(storage_context)
+        self.vector_store = PGVectorStore.from_params(
+            database=self.dbname,
+            host=self.host,
+            password=self.password,
+            port=self.port,
+            user=self.username,
+            table_name="ganga_rag",
+            embed_dim=384,
+            hnsw_kwargs={
+                "hnsw_m": 16,
+                "hnsw_ef_construction": 64,
+                "hnsw_ef_search": 40,
+                "hnsw_dist_method": "vector_cosine_ops",
+            },
+        )
+        index = VectorStoreIndex.from_vector_store(vector_store=self.vector_store)
+        self.query_engine = index.as_query_engine()
 
     def query_vector_store(self, query: str):
-        if self.vector_store:
-            query_engine = self.vector_store.as_query_engine(llm=self.llm)
-            llm_response = query_engine.query(query)
+        if self.query_engine:
+            llm_response = self.query_engine.query(query)
             return llm_response
         else:
             return ""

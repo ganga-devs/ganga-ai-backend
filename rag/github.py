@@ -89,8 +89,3 @@ def download_github_repo(github_url: str, download_path: str) -> None:
     except Exception as err:
         print("Could not clone repository")
         logger.info(f"file: github function: download_github_repo error in cloning repository: {err}")
-
-#TODO: Write a test for this function
-# github_test_url = "https://github.com/ganga-devs/ganga"
-# storage_path = "./cache/raw"
-# download_github_repo(github_test_url, storage_path)

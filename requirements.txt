@@ -6,7 +6,9 @@ ipython
 llama-index
 llama-index-embeddings-huggingface
 llama-index-llms-ollama
+llama-index-vector-stores-postgres
 python-dotenv
 rich
 sphinx
 pgvector
+psycopg2

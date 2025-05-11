@@ -40,7 +40,11 @@ class Environtment_Variables(TypedDict):
     LLM_MODEL: str
     DATA_URLS: List[str]
     CACHE_PATH: str
-
+    DBNAME: str
+    USERNAME: str
+    PASSWORD: str
+    HOST: str
+    PORT: str
 
 def load_env() -> Environtment_Variables:
     """
@@ -59,16 +63,43 @@ def load_env() -> Environtment_Variables:
     default_llm_model = "mistral"
     default_data_urls = "https://github.com/ganga-devs/ganga"
     default_cache_path = "cache"
+    default_db_name = "rag"
+    default_user_name = "cern"
+    default_db_password = "root"
+    default_host = "localhost"
+    default_port = "5432"
     EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', default_embedding_model)
     LLM_MODEL = os.getenv('LLM_MODEL', default_llm_model)
     DATA_URLS = os.getenv('DATA_URLS', default_data_urls).split(',')
     CACHE_PATH = os.getenv("CACHE_PATH", default_cache_path)
-    logger.info(f"EMBEDDING_MODEL: {EMBEDDING_MODEL}, LLM_MODEL: {LLM_MODEL}, DATA_URLS: {DATA_URLS}")
+    DBNAME = os.getenv("DBNAME", default_db_name)
+    USERNAME = os.getenv("DBUSER", default_user_name)
+    DBPASSWORD = os.getenv("DBPASSWORD", default_db_password)
+    HOST = os.getenv("HOST", default_host)
+    PORT = os.getenv("PORT", default_port)
+
+    logger.info(f"""
+    EMBEDDING_MODEL: {EMBEDDING_MODEL}
+    LLM_MODEL: {LLM_MODEL}
+    DATA_URLS: {DATA_URLS}
+    CACHE_PATH: {CACHE_PATH}
+    DBNAME: {DBNAME}
+    USERNAME: {USERNAME}
+    PASSWORD: {DBPASSWORD}
+    HOST: {HOST}
+    PORT: {PORT}
+    """)
+
     return {
         'EMBEDDING_MODEL': EMBEDDING_MODEL,
         'LLM_MODEL': LLM_MODEL,
         'DATA_URLS': DATA_URLS,
-        "CACHE_PATH": CACHE_PATH,
+        'CACHE_PATH': CACHE_PATH,
+        'DBNAME': DBNAME,
+        'USERNAME': USERNAME,
+        'PASSWORD': DBPASSWORD,
+        'HOST': HOST,
+        'PORT': PORT,
     }
 
 environment_variables = load_env()
