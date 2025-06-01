@@ -7,7 +7,7 @@ import psycopg2
 from typing import Literal, List
 from root.settings import environment_variables
 from rag.github import download_github_repo
-from llama_index.core import ( VectorStoreIndex, SimpleDirectoryReader, load_index_from_storage, Settings)
+from llama_index.core import ( VectorStoreIndex, SimpleDirectoryReader, Settings)
 from llama_index.core.storage import StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
@@ -50,10 +50,7 @@ def remove_directory(directory_path: str) -> None:
 
 class Vector_Store():
     """
-    TODOS
-    1. The creation process of the db should be orchestrated by the docker script
-    2. Convert this to a singleton based class
-    3. Move to bigger dimension embeddings
+    Main class for the vector store
     """
 
     cache_path = environment_variables["CACHE_PATH"]
@@ -65,6 +62,8 @@ class Vector_Store():
     password = environment_variables["PASSWORD"]
     host = environment_variables["HOST"]
     port = environment_variables["PORT"]
+    transformer_dimension = environment_variables["TRANSFORMER_DIMENSION"]
+    rag_table_name = "ganga_rag"
     request_timeout = 300
     raw_data_path = os.path.join(cache_path, "raw")
     processed_data_path = os.path.join(cache_path, "processed")
@@ -84,24 +83,39 @@ class Vector_Store():
 
     def does_vector_store_exist(self) -> bool:
         """
-        Check if the vector store already exists
+        This function checks whether the rag table exists or not by searching the information_schema
+        provided by postgres.
+        This is needed as the load methods creates an empty table in case it does not find one.
+        Llama index also prefixes "data" to the name of the table provided by it.
+        So in information_schema the rag table will show up as data_table_name in the public section.
         """
-        # logger.info(f"file: vector_store method: vector_store_exists vector_store_path: {self.vector_store_path}")
-        # if os.path.isdir(self.vector_store_path):
-        #     for file_name in os.listdir(self.vector_store_path):
-        #         if file_name.endswith(".json"):
-        #             return True
-        return False
+        try:
+            with self.connection.cursor() as cursor:
+                ps_sql_query = """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = 'public' AND table_name = %s
+                    );
+                """
+                prefixed_table_name = f"data_{self.rag_table_name}"
+                cursor.execute(ps_sql_query, (prefixed_table_name,))
+                result = cursor.fetchone()
+                if result is None:
+                    return False
+                return result[0]
+        except Exception as e:
+            logger.warning(f"file: vector_store method: does_vector_store_exist error: {e}")
+            return False
 
-    def generate_text_files_from_sphinx_files(self, input_sphinx_dir: str, output_txt_dir):
+
+    def generate_text_files_from_sphinx_files(self, input_sphinx_dir: str, output_txt_dir: str):
         """
         Generates text files from sphinx files
         """
 
         build_command = ["sphinx-build", "-b", "text", input_sphinx_dir, output_txt_dir]
-
         subprocess.run(build_command, check=True)
-
         doctrees_path = os.path.join(output_txt_dir, ".doctrees")
         if os.path.exists(doctrees_path):
             shutil.rmtree(doctrees_path)
@@ -145,27 +159,27 @@ class Vector_Store():
             case "UNKNOWN":
                 logger.warning(f"file: vector_store method: download_data the unknown type of url encountered: {url}")
 
-    def create_and_load_vector_store(self):
-        logger.info(f"method: create_vector_store downloading data")
+    def create_and_load_vector_store(self) -> None:
+        logger.info(f"file: vector_store method: create_vector_store downloading data")
         for directory_path in (self.raw_data_path, self.processed_data_path):
             create_directory(directory_path)
 
         for url in self.data_urls:
             self.download_intial_data(url=url, download_path=self.raw_data_path)
 
-        logger.info(f"method: create_vector_store processing downloaded data")
+        logger.info(f"file: vector_store method: create_vector_store processing downloaded data")
         dir_list = self.create_list_of_directories_to_process(self.raw_data_path)
         self.process_data(dir_list=dir_list)
 
-        logger.info(f"method: create_vector_store preparing vector database")
+        logger.info(f"file: vector_store method: create_vector_store preparing vector database")
         self.vector_store =  PGVectorStore.from_params(
             database=self.dbname,
             host=self.host,
             password=self.password,
             port=self.port,
             user=self.username,
-            table_name="ganga_rag",
-            embed_dim=384,
+            table_name=self.rag_table_name,
+            embed_dim=self.transformer_dimension,
             hnsw_kwargs={
                 "hnsw_m": 16,
                 "hnsw_ef_construction": 64,
@@ -174,36 +188,44 @@ class Vector_Store():
             },
         )
 
-        logger.info(f"method: create_vector_store loading processed documents")
+        logger.info(f"file: vector_store method: create_vector_store loading processed documents")
         self.storage_context = StorageContext.from_defaults(vector_store=self.vector_store)
         documents = SimpleDirectoryReader(input_dir=self.processed_data_path, recursive=True).load_data()
 
-        logger.info(f"method: create_vector_store creating query_engine")
+        logger.info(f"file: vector_store method: create_vector_store creating query_engine")
         index = VectorStoreIndex.from_documents(documents, storage_context=self.storage_context)
         self.query_engine = index.as_query_engine()
 
-        logger.info(f"method: create_vector_store clearing intermediary files")
+        logger.info(f"file: vector_store method: create_vector_store clearing intermediary files")
         for directory_path in (self.raw_data_path, self.processed_data_path):
             remove_directory(directory_path=directory_path)
 
-    def load_vector_store(self):
-        self.vector_store = PGVectorStore.from_params(
-            database=self.dbname,
-            host=self.host,
-            password=self.password,
-            port=self.port,
-            user=self.username,
-            table_name="ganga_rag",
-            embed_dim=384,
-            hnsw_kwargs={
-                "hnsw_m": 16,
-                "hnsw_ef_construction": 64,
-                "hnsw_ef_search": 40,
-                "hnsw_dist_method": "vector_cosine_ops",
-            },
-        )
-        index = VectorStoreIndex.from_vector_store(vector_store=self.vector_store)
-        self.query_engine = index.as_query_engine()
+    def load_vector_store(self) -> bool:
+        """
+        Load the vector store if it exists
+        """
+        try:
+            self.vector_store = PGVectorStore.from_params(
+                database=self.dbname,
+                host=self.host,
+                password=self.password,
+                port=self.port,
+                user=self.username,
+                table_name=self.rag_table_name,
+                embed_dim=self.transformer_dimension,
+                hnsw_kwargs={
+                    "hnsw_m": 16,
+                    "hnsw_ef_construction": 64,
+                    "hnsw_ef_search": 40,
+                    "hnsw_dist_method": "vector_cosine_ops",
+                },
+            )
+            index = VectorStoreIndex.from_vector_store(vector_store=self.vector_store)
+            self.query_engine = index.as_query_engine()
+            return True
+        except Exception as e:
+            logger.warning(f"file: vector_store method: load_vector_store error: {e}")
+            return False
 
     def query_vector_store(self, query: str):
         if self.query_engine:

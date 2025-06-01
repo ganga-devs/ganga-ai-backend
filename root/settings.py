@@ -45,6 +45,7 @@ class Environtment_Variables(TypedDict):
     PASSWORD: str
     HOST: str
     PORT: str
+    TRANSFORMER_DIMENSION: int
 
 def load_env() -> Environtment_Variables:
     """
@@ -68,6 +69,7 @@ def load_env() -> Environtment_Variables:
     default_db_password = "root"
     default_host = "localhost"
     default_port = "5432"
+    default_transformer_dimension = 384
     EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', default_embedding_model)
     LLM_MODEL = os.getenv('LLM_MODEL', default_llm_model)
     DATA_URLS = os.getenv('DATA_URLS', default_data_urls).split(',')
@@ -77,6 +79,7 @@ def load_env() -> Environtment_Variables:
     DBPASSWORD = os.getenv("DBPASSWORD", default_db_password)
     HOST = os.getenv("HOST", default_host)
     PORT = os.getenv("PORT", default_port)
+    TRANSFORMER_DIMENSION = int(os.getenv("TRANSFORMER_DIMENSION", default_transformer_dimension))
 
     logger.info(f"""
     EMBEDDING_MODEL: {EMBEDDING_MODEL}
@@ -88,6 +91,7 @@ def load_env() -> Environtment_Variables:
     PASSWORD: {DBPASSWORD}
     HOST: {HOST}
     PORT: {PORT}
+    TRANSFORMER_DIMENSION: {TRANSFORMER_DIMENSION}
     """)
 
     return {
@@ -100,6 +104,7 @@ def load_env() -> Environtment_Variables:
         'PASSWORD': DBPASSWORD,
         'HOST': HOST,
         'PORT': PORT,
+        'TRANSFORMER_DIMENSION': TRANSFORMER_DIMENSION,
     }
 
 environment_variables = load_env()
