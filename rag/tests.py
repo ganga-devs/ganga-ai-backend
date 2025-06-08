@@ -24,7 +24,7 @@
 #         test_cache_path = "test_cache"
 #         test_vector_store_path = os.path.join(test_cache_path, "vector_store")
 #         test_json_filepath = os.path.join(test_vector_store_path, "test.json")
-#         
+#
 #         # Helper functions
 #         def remove_dummy_vector_store():
 #             if os.path.exists(test_cache_path):
@@ -36,7 +36,7 @@
 #         def create_dummy_json_file():
 #             with open(test_json_filepath, "w") as test_json_file:
 #                 test_json_file.write("{}")
-#         
+#
 #         try:
 #             logger.info("Checking for and cleaning older test artifcats")
 #             remove_dummy_vector_store()

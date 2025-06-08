@@ -6,11 +6,13 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import json
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def health(request):
     return HttpResponse("ok")
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 def query(request, *args, **kwargs):
     if request.method == "POST":
         serializer = VectorStoreSerializer(data=request.data)

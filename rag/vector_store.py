@@ -7,7 +7,7 @@ import psycopg2
 from typing import Literal, List
 from root.settings import environment_variables
 from rag.github import download_github_repo
-from llama_index.core import ( VectorStoreIndex, SimpleDirectoryReader, Settings)
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.core.storage import StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
@@ -15,6 +15,7 @@ from llama_index.vector_stores.postgres import PGVectorStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def type_of_url(url: str) -> Literal["GITHUB", "UNKNOWN"]:
     """
@@ -25,8 +26,11 @@ def type_of_url(url: str) -> Literal["GITHUB", "UNKNOWN"]:
             url_type = "GITHUB"
         case _:
             url_type = "UNKNOWN"
-    logger.info(f"file: vector_store function: type_of_url input: {url} output: {url_type}")
+    logger.info(
+        f"file: vector_store function: type_of_url input: {url} output: {url_type}"
+    )
     return url_type
+
 
 def create_directory(directory_path: str) -> None:
     """
@@ -34,9 +38,14 @@ def create_directory(directory_path: str) -> None:
     """
     try:
         os.makedirs(directory_path, exist_ok=True)
-        logger.info(f"file vector_store function create_directory created new directory at {directory_path}")
+        logger.info(
+            f"file vector_store function create_directory created new directory at {directory_path}"
+        )
     except Exception as err:
-        logger.warning(f"file vector_store function create_directory error encountered: {err}")
+        logger.warning(
+            f"file vector_store function create_directory error encountered: {err}"
+        )
+
 
 def remove_directory(directory_path: str) -> None:
     """
@@ -44,11 +53,16 @@ def remove_directory(directory_path: str) -> None:
     """
     try:
         shutil.rmtree(directory_path)
-        logger.info(f"file vector_store function remove_directory removed directory {directory_path}")
+        logger.info(
+            f"file vector_store function remove_directory removed directory {directory_path}"
+        )
     except Exception as err:
-        logger.warning(f"file vector_store function create_directory error encountered: {err}")
+        logger.warning(
+            f"file vector_store function create_directory error encountered: {err}"
+        )
 
-class Vector_Store():
+
+class Vector_Store:
     """
     Main class for the vector store
     """
@@ -72,7 +86,9 @@ class Vector_Store():
     vector_store = None
     storage_context = None
     query_engine = None
-    connection = psycopg2.connect(dbname=dbname, user=username, password=password, host=host)
+    connection = psycopg2.connect(
+        dbname=dbname, user=username, password=password, host=host
+    )
     connection.autocommit = True
 
     def __init__(self):
@@ -105,11 +121,14 @@ class Vector_Store():
                     return False
                 return result[0]
         except Exception as e:
-            logger.warning(f"file: vector_store method: does_vector_store_exist error: {e}")
+            logger.warning(
+                f"file: vector_store method: does_vector_store_exist error: {e}"
+            )
             return False
 
-
-    def generate_text_files_from_sphinx_files(self, input_sphinx_dir: str, output_txt_dir: str):
+    def generate_text_files_from_sphinx_files(
+        self, input_sphinx_dir: str, output_txt_dir: str
+    ):
         """
         Generates text files from sphinx files
         """
@@ -124,7 +143,10 @@ class Vector_Store():
         ganga_sphinx_files_path = os.path.join(self.raw_data_path, "ganga/doc")
         ganga_txt_files_path = os.path.join(self.processed_data_path, "ganga/doc")
         create_directory(ganga_txt_files_path)
-        self.generate_text_files_from_sphinx_files(input_sphinx_dir=ganga_sphinx_files_path, output_txt_dir=ganga_txt_files_path)
+        self.generate_text_files_from_sphinx_files(
+            input_sphinx_dir=ganga_sphinx_files_path,
+            output_txt_dir=ganga_txt_files_path,
+        )
 
     def process_data(self, dir_list: List[str]):
         for dir in dir_list:
@@ -132,7 +154,9 @@ class Vector_Store():
                 case "cache/raw/ganga/doc":
                     self.process_ganga_docs()
                 case _:
-                    logger.info(f"file: vector_store method: consume_data unhandled type of data: {dir}")
+                    logger.info(
+                        f"file: vector_store method: consume_data unhandled type of data: {dir}"
+                    )
 
     def create_list_of_directories_to_process(self, raw_cache_path: str) -> List[str]:
         """
@@ -143,12 +167,14 @@ class Vector_Store():
         try:
             for subdir in os.listdir(raw_cache_path):
                 subdir_path = os.path.join(raw_cache_path, subdir)
-                if subdir == 'ganga':
-                    dir_list.append(os.path.join(subdir_path, 'doc'))
+                if subdir == "ganga":
+                    dir_list.append(os.path.join(subdir_path, "doc"))
                 else:
                     dir_list.append(subdir_path)
         except Exception as err:
-            print(f"file: vector_store method: create_list_of_directories_to_consume error: {err}")
+            print(
+                f"file: vector_store method: create_list_of_directories_to_consume error: {err}"
+            )
         return dir_list
 
     def download_intial_data(self, url: str, download_path) -> None:
@@ -157,7 +183,9 @@ class Vector_Store():
             case "GITHUB":
                 download_github_repo(github_url=url, download_path=download_path)
             case "UNKNOWN":
-                logger.warning(f"file: vector_store method: download_data the unknown type of url encountered: {url}")
+                logger.warning(
+                    f"file: vector_store method: download_data the unknown type of url encountered: {url}"
+                )
 
     def create_and_load_vector_store(self) -> None:
         logger.info(f"file: vector_store method: create_vector_store downloading data")
@@ -167,12 +195,16 @@ class Vector_Store():
         for url in self.data_urls:
             self.download_intial_data(url=url, download_path=self.raw_data_path)
 
-        logger.info(f"file: vector_store method: create_vector_store processing downloaded data")
+        logger.info(
+            f"file: vector_store method: create_vector_store processing downloaded data"
+        )
         dir_list = self.create_list_of_directories_to_process(self.raw_data_path)
         self.process_data(dir_list=dir_list)
 
-        logger.info(f"file: vector_store method: create_vector_store preparing vector database")
-        self.vector_store =  PGVectorStore.from_params(
+        logger.info(
+            f"file: vector_store method: create_vector_store preparing vector database"
+        )
+        self.vector_store = PGVectorStore.from_params(
             database=self.dbname,
             host=self.host,
             password=self.password,
@@ -188,15 +220,27 @@ class Vector_Store():
             },
         )
 
-        logger.info(f"file: vector_store method: create_vector_store loading processed documents")
-        self.storage_context = StorageContext.from_defaults(vector_store=self.vector_store)
-        documents = SimpleDirectoryReader(input_dir=self.processed_data_path, recursive=True).load_data()
+        logger.info(
+            f"file: vector_store method: create_vector_store loading processed documents"
+        )
+        self.storage_context = StorageContext.from_defaults(
+            vector_store=self.vector_store
+        )
+        documents = SimpleDirectoryReader(
+            input_dir=self.processed_data_path, recursive=True
+        ).load_data()
 
-        logger.info(f"file: vector_store method: create_vector_store creating query_engine")
-        index = VectorStoreIndex.from_documents(documents, storage_context=self.storage_context)
+        logger.info(
+            f"file: vector_store method: create_vector_store creating query_engine"
+        )
+        index = VectorStoreIndex.from_documents(
+            documents, storage_context=self.storage_context
+        )
         self.query_engine = index.as_query_engine()
 
-        logger.info(f"file: vector_store method: create_vector_store clearing intermediary files")
+        logger.info(
+            f"file: vector_store method: create_vector_store clearing intermediary files"
+        )
         for directory_path in (self.raw_data_path, self.processed_data_path):
             remove_directory(directory_path=directory_path)
 
@@ -233,5 +277,6 @@ class Vector_Store():
             return llm_response
         else:
             return ""
+
 
 vector_store = Vector_Store()

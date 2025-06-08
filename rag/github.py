@@ -1,4 +1,4 @@
-#TODO: remove type errors from this file
+# TODO: remove type errors from this file
 
 from __future__ import annotations
 from git import Repo, RemoteProgress
@@ -8,6 +8,7 @@ import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class GitRemoteProgress(RemoteProgress):
     OP_CODES = [
@@ -21,9 +22,7 @@ class GitRemoteProgress(RemoteProgress):
         "RESOLVING",
         "WRITING",
     ]
-    OP_CODE_MAP = {
-        getattr(RemoteProgress, _op_code): _op_code for _op_code in OP_CODES
-    }
+    OP_CODE_MAP = {getattr(RemoteProgress, _op_code): _op_code for _op_code in OP_CODES}
 
     def __init__(self) -> None:
         super().__init__()
@@ -77,10 +76,13 @@ class GitRemoteProgress(RemoteProgress):
                 message=f"[bright_black]{message}",
             )
 
+
 def download_github_repo(github_url: str, download_path: str) -> None:
-    logger.info(f"file: github function: download_github_repo cloning repository: {github_url} in directory: {download_path}")
+    logger.info(
+        f"file: github function: download_github_repo cloning repository: {github_url} in directory: {download_path}"
+    )
     try:
-        repo_name = github_url.rstrip('/').split('/')[-1].replace('.git', '')
+        repo_name = github_url.rstrip("/").split("/")[-1].replace(".git", "")
         repo_download_path = os.path.join(download_path, repo_name)
         os.makedirs(repo_download_path)
         print(f"Cloning git repository from {github_url}...")
@@ -88,4 +90,6 @@ def download_github_repo(github_url: str, download_path: str) -> None:
         print("Repository cloned successfully")
     except Exception as err:
         print("Could not clone repository")
-        logger.info(f"file: github function: download_github_repo error in cloning repository: {err}")
+        logger.info(
+            f"file: github function: download_github_repo error in cloning repository: {err}"
+        )

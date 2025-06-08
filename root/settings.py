@@ -35,6 +35,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+
 class Environtment_Variables(TypedDict):
     EMBEDDING_MODEL: str
     LLM_MODEL: str
@@ -47,18 +48,21 @@ class Environtment_Variables(TypedDict):
     PORT: str
     TRANSFORMER_DIMENSION: int
 
+
 def load_env() -> Environtment_Variables:
     """
     Loads and returns the environment variables as a dictionary
     """
 
-    dotenv_path = join(dirname(__file__), '../.env')
+    dotenv_path = join(dirname(__file__), "../.env")
     logger.info("file: root/settings.py function: load_env loading the environment")
 
     try:
         load_dotenv(dotenv_path)
     except Exception as err:
-        logger.warning(f"file: vector_store function: load_env could not load environment variables with error: {err}")
+        logger.warning(
+            f"file: vector_store function: load_env could not load environment variables with error: {err}"
+        )
 
     default_embedding_model = "BAAI/bge-small-en-v1.5"
     default_llm_model = "mistral"
@@ -70,18 +74,21 @@ def load_env() -> Environtment_Variables:
     default_host = "localhost"
     default_port = "5432"
     default_transformer_dimension = 384
-    EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', default_embedding_model)
-    LLM_MODEL = os.getenv('LLM_MODEL', default_llm_model)
-    DATA_URLS = os.getenv('DATA_URLS', default_data_urls).split(',')
+    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", default_embedding_model)
+    LLM_MODEL = os.getenv("LLM_MODEL", default_llm_model)
+    DATA_URLS = os.getenv("DATA_URLS", default_data_urls).split(",")
     CACHE_PATH = os.getenv("CACHE_PATH", default_cache_path)
     DBNAME = os.getenv("DBNAME", default_db_name)
     USERNAME = os.getenv("DBUSER", default_user_name)
     DBPASSWORD = os.getenv("DBPASSWORD", default_db_password)
     HOST = os.getenv("HOST", default_host)
     PORT = os.getenv("PORT", default_port)
-    TRANSFORMER_DIMENSION = int(os.getenv("TRANSFORMER_DIMENSION", default_transformer_dimension))
+    TRANSFORMER_DIMENSION = int(
+        os.getenv("TRANSFORMER_DIMENSION", default_transformer_dimension)
+    )
 
-    logger.info(f"""
+    logger.info(
+        f"""
     EMBEDDING_MODEL: {EMBEDDING_MODEL}
     LLM_MODEL: {LLM_MODEL}
     DATA_URLS: {DATA_URLS}
@@ -92,23 +99,24 @@ def load_env() -> Environtment_Variables:
     HOST: {HOST}
     PORT: {PORT}
     TRANSFORMER_DIMENSION: {TRANSFORMER_DIMENSION}
-    """)
+    """
+    )
 
     return {
-        'EMBEDDING_MODEL': EMBEDDING_MODEL,
-        'LLM_MODEL': LLM_MODEL,
-        'DATA_URLS': DATA_URLS,
-        'CACHE_PATH': CACHE_PATH,
-        'DBNAME': DBNAME,
-        'USERNAME': USERNAME,
-        'PASSWORD': DBPASSWORD,
-        'HOST': HOST,
-        'PORT': PORT,
-        'TRANSFORMER_DIMENSION': TRANSFORMER_DIMENSION,
+        "EMBEDDING_MODEL": EMBEDDING_MODEL,
+        "LLM_MODEL": LLM_MODEL,
+        "DATA_URLS": DATA_URLS,
+        "CACHE_PATH": CACHE_PATH,
+        "DBNAME": DBNAME,
+        "USERNAME": USERNAME,
+        "PASSWORD": DBPASSWORD,
+        "HOST": HOST,
+        "PORT": PORT,
+        "TRANSFORMER_DIMENSION": TRANSFORMER_DIMENSION,
     }
 
-environment_variables = load_env()
 
+environment_variables = load_env()
 
 
 # Application definition
