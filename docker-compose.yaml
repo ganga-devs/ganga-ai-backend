@@ -1,0 +1,15 @@
+name: Ganga-AI-Backend
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: pg-db
+    restart: always
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: cern
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
