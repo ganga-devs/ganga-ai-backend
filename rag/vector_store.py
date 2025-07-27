@@ -92,10 +92,35 @@ class Vector_Store:
     connection.autocommit = True
 
     def __init__(self):
+        self.download_llm_model()
         if self.does_vector_store_exist():
             self.load_vector_store()
         else:
             self.create_and_load_vector_store()
+
+    def download_llm_model(self):
+        """
+        Ensures the Ollama model is available locally by checking the modelfiles directory.
+        Pulls it using `ollama pull` if missing.
+        """
+        model_path = os.path.join("modelfiles", self.llm_model)
+        if not os.path.exists(model_path):
+            logger.info(
+                f"file: vector_store method: ensure_ollama_model_exists model not found at {model_path}, pulling model"
+            )
+            try:
+                subprocess.run(
+                    ["ollama", "pull", self.llm_model],
+                    check=True,
+                    timeout=1000,
+                )
+                logger.info(
+                    f"file: vector_store method: ensure_ollama_model_exists successfully pulled {self.llm_model}"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"file: vector_store method: ensure_ollama_model_exists failed to pull {self.llm_model}: {e}"
+                )
 
     def does_vector_store_exist(self) -> bool:
         """
