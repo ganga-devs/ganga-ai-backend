@@ -18,7 +18,8 @@ def query(request, *args, **kwargs):
         serializer = VectorStoreSerializer(data=request.data)
         if serializer.is_valid():
             query = serializer.data["query"]
-            llm_response = vector_store.query_vector_store(query=query)
+            user_id = serializer.data["user_id"]
+            llm_response = vector_store.query_vector_store(query=query, user_id=user_id)
             print(f"DEBUGPRINT[21]: views.py:20: llm_response={llm_response}")
             return Response({"success": "success"}, status=200)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

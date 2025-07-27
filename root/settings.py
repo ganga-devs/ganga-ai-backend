@@ -47,6 +47,9 @@ class Environtment_Variables(TypedDict):
     HOST: str
     PORT: str
     TRANSFORMER_DIMENSION: int
+    REDIS_DB: int
+    REDIS_HOST: str
+    REDIS_PORT: int
 
 
 def load_env() -> Environtment_Variables:
@@ -74,6 +77,9 @@ def load_env() -> Environtment_Variables:
     default_host = "localhost"
     default_port = "5432"
     default_transformer_dimension = 384
+    default_redis_db = 0
+    default_redis_host = "localhost"
+    default_redis_port = 6379
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", default_embedding_model)
     LLM_MODEL = os.getenv("LLM_MODEL", default_llm_model)
     DATA_URLS = os.getenv("DATA_URLS", default_data_urls).split(",")
@@ -86,6 +92,9 @@ def load_env() -> Environtment_Variables:
     TRANSFORMER_DIMENSION = int(
         os.getenv("TRANSFORMER_DIMENSION", default_transformer_dimension)
     )
+    REDIS_DB = int(os.getenv("REDIS_DB", default_redis_db))
+    REDIS_HOST = os.getenv("REDIS_HOST", default_redis_host)
+    REDIS_PORT = int(os.getenv("REDIS_PORT", default_redis_port))
 
     logger.info(
         f"""
@@ -99,6 +108,9 @@ def load_env() -> Environtment_Variables:
     HOST: {HOST}
     PORT: {PORT}
     TRANSFORMER_DIMENSION: {TRANSFORMER_DIMENSION}
+    REDIS_DB: {REDIS_DB}
+    REDIS_HOST: {REDIS_HOST}
+    REDIS_PORT: {REDIS_PORT}
     """
     )
 
@@ -113,6 +125,9 @@ def load_env() -> Environtment_Variables:
         "HOST": HOST,
         "PORT": PORT,
         "TRANSFORMER_DIMENSION": TRANSFORMER_DIMENSION,
+        "REDIS_DB": REDIS_DB,
+        "REDIS_HOST": REDIS_HOST,
+        "REDIS_PORT": REDIS_PORT,
     }
 
 

@@ -12,6 +12,7 @@ from llama_index.core.storage import StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.postgres import PGVectorStore
+from user.redis_client import get_or_create_user_uuid, get_conversation_history, store_message
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -296,9 +297,20 @@ class Vector_Store:
             logger.warning(f"file: vector_store method: load_vector_store error: {e}")
             return False
 
-    def query_vector_store(self, query: str):
+    def query_vector_store(self, query: str, user_id: str):
+
+        user_uuid = get_or_create_user_uuid(user_id)
+        print(f"DEBUGPRINT[93]: vector_store.py:302: user_uuid={user_uuid}")
+        history = get_conversation_history(user_uuid)
+        formatted_history = "\n".join(
+            [f"{role}: {msg}" for role, msg in history]
+        )
+        final_prompt = f"{formatted_history}\nuser: {query}"
+
         if self.query_engine:
-            llm_response = self.query_engine.query(query)
+            llm_response = self.query_engine.query(final_prompt)
+            store_message(user_uuid, "user", query)
+            store_message(user_uuid, "assistant", str(llm_response))
             return llm_response
         else:
             return ""
